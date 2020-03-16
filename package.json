@@ -1,0 +1,33 @@
+{
+  "name": "@hellotellow/structured",
+  "version": "0.1.0",
+  "main": "dist/structured.js",
+  "author": "Tellow Team <dev@tellow.nl>",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/hellotellow/node-structured.git"
+  },
+  "license": "MIT",
+  "bin": {
+    "structured": "dist/cli.js"
+  },
+  "scripts": {
+    "build": "tsc"
+  },
+  "devDependencies": {
+    "@types/node": "^13.9.1",
+    "prettier": "^1.19.1",
+    "typescript": "^3.8.3"
+  },
+  "dependencies": {
+    "@types/minimatch": "^3.0.3",
+    "@typescript-eslint/parser": "^2.23.0",
+    "chalk": "^3.0.0",
+    "change-case": "^4.1.1",
+    "cosmiconfig": "^6.0.0",
+    "eslint": "^6.8.0",
+    "fast-glob": "^3.2.2",
+    "handlebars": "^4.7.3",
+    "minimatch": "^3.0.4"
+  }
+}
