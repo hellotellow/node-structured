@@ -50,11 +50,7 @@ export default class Structured {
       for (const foundFolder of folders) {
         this.trackedFolders.push(foundFolder)
 
-        try {
-          this.assertMatch(config.match, glob, foundFolder)
-        } catch (err) {
-          this.errors.push(err)
-        }
+        this.checkMatch(config.match, glob, foundFolder)
       }
     }
   }
@@ -74,11 +70,7 @@ export default class Structured {
       for (const foundFile of files) {
         this.trackedFiles.push(foundFile)
 
-        try {
-          this.assertMatch(config.match, glob, foundFile)
-        } catch (err) {
-          this.errors.push(err)
-        }
+        this.checkMatch(config.match, glob, foundFile)
 
         if (config.imports || config.exports) {
           const code = fs.readFileSync(foundFile, 'utf8')
@@ -112,17 +104,8 @@ export default class Structured {
             if (config2.type === 'class' && item.declaration.type !== 'ClassDeclaration') {
               this.errors.push(new LintError(foundFile, `Expected "${exportName}" export to be a class`))
             } else {
-              if (typeof config2.match === 'string' && config2.match) {
-                const template = createTemplate(config2.match)
-                const baseName = path.basename(foundFile)
-                const name = baseName.replace(path.basename(glob).replace('*', ''), '')
-                const expected = template({ name })
-                const actual = item.declaration?.id?.name || item.declaration?.name
-
-                if (expected !== actual) {
-                  this.errors.push(new LintError(foundFile, `No match: "${actual}" does not match "${expected}"`))
-                }
-              }
+              const actual = item.declaration?.id?.name || item.declaration?.name
+              this.checkMatch(config2.match, glob, foundFile, actual)
             }
           }
         }
@@ -182,15 +165,24 @@ export default class Structured {
     }
   }
 
-  private assertMatch(matchTemplate: string | undefined, glob: string, fileOrFolderPath: string): void {
+  private checkMatch(
+    matchTemplate: string | undefined,
+    glob: string,
+    fileOrFolderPath: string,
+    actual: string | undefined = undefined,
+  ): void {
     if (typeof matchTemplate !== 'string' || !matchTemplate) {
       return
     }
     const template = createTemplate(matchTemplate)
     const baseName = path.basename(fileOrFolderPath)
     const name = baseName.replace(path.basename(glob).replace('*', ''), '')
-    if (template({ name }) !== baseName) {
-      throw new LintError(fileOrFolderPath, `No match: "${baseName}" does not match "${matchTemplate}"`)
+    const expected = template({ name })
+    if (!actual) {
+      actual = baseName
+    }
+    if (expected !== actual) {
+      this.errors.push(new LintError(fileOrFolderPath, `No match: "${actual}" does not match "${expected}"`))
     }
   }
 
