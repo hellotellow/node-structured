@@ -15,11 +15,13 @@
     "build": "tsc"
   },
   "devDependencies": {
+    "@types/hapi__joi": "^16.0.12",
     "@types/node": "^13.9.1",
     "prettier": "^1.19.1",
     "typescript": "^3.8.3"
   },
   "dependencies": {
+    "@hapi/joi": "^17.1.1",
     "@types/minimatch": "^3.0.3",
     "@typescript-eslint/parser": "^2.23.0",
     "chalk": "^3.0.0",

@@ -3,14 +3,10 @@ import path from 'path'
 import fg from 'fast-glob'
 import { parseForESLint } from '@typescript-eslint/parser'
 import minimatch from 'minimatch'
+import OptionsSchema, { Options } from './Options'
 import ConfigError from './ConfigError'
 import LintError, { LintErrors } from './LintError'
 import createTemplate from './util/template'
-
-export type Options = {
-  folders: { [glob: string]: any }
-  files: { [glob: string]: any }
-}
 
 export default class Structured {
   private trackedFolders: string[] = []
@@ -28,15 +24,21 @@ export default class Structured {
   }
 
   private prepare() {
+    this.checkConfig()
     this.trackedFolders = []
     this.trackedFiles = []
     this.errors = []
+  }
 
-    // TODO Validate config object
+  private checkConfig() {
+    const { error } = OptionsSchema.validate(this.options)
+    if (error) {
+      throw new ConfigError(error.message)
+    }
   }
 
   private async checkFolders() {
-    for (const [glob, config] of Object.entries(this.options.folders)) {
+    for (const [glob, config] of Object.entries(this.options.folders || {})) {
       if (!glob.endsWith('/')) {
         throw new ConfigError(`Folder glob "${glob}" must end with slash for readability`)
       }
@@ -56,7 +58,7 @@ export default class Structured {
   }
 
   private async checkFiles() {
-    for (const [glob, config] of Object.entries(this.options.files)) {
+    for (const [glob, config] of Object.entries(this.options.files || {})) {
       if (glob.endsWith('/')) {
         throw new ConfigError(`File glob "${glob}" must not end with slash`)
       }
@@ -91,9 +93,7 @@ export default class Structured {
             }
           }
 
-          for (const [exportName, _config] of Object.entries(config.exports || {})) {
-            const config2 = _config as any
-
+          for (const [exportName, config2] of Object.entries(config.exports || {})) {
             const type = exportName === 'default' ? 'ExportDefaultDeclaration' : 'ExportNamedDeclaration'
             const item = ast.body.find(item => item.type === type) as any
 
@@ -135,7 +135,7 @@ export default class Structured {
   }
 
   private async checkUntrackedFiles() {
-    for (const [glob, config] of Object.entries(this.options.folders)) {
+    for (const [glob, config] of Object.entries(this.options.folders || {})) {
       if (!glob.endsWith('/')) {
         throw new ConfigError(`Folder glob "${glob}" must end with slash for readability`)
       }
@@ -150,7 +150,9 @@ export default class Structured {
         const index = filesInFolder.indexOf(trackedFile)
         if (index !== -1) {
           filesInFolder.splice(index, 1)
-          // trackedFiles.splice(trackedFiles.indexOf(trackedFile), 1) // Remove from tracked files to prevent double errors?
+
+          // TODO Remove from tracked files to prevent double errors?
+          // trackedFiles.splice(trackedFiles.indexOf(trackedFile), 1)
         }
       }
       for (const untrackedFile of filesInFolder) {
