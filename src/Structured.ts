@@ -109,7 +109,7 @@ export default class Structured {
               this.errors.push(new LintError(foundFile, `Missing "${exportName}" export`))
             }
 
-            if (config.type === 'class' && item.declaration.type !== 'ClassDeclaration') {
+            if (config2.type === 'class' && item.declaration.type !== 'ClassDeclaration') {
               this.errors.push(new LintError(foundFile, `Expected "${exportName}" export to be a class`))
             } else {
               if (typeof config2.match === 'string' && config2.match) {
