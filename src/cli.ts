@@ -1,7 +1,8 @@
 #!/usr/bin/env node
 import { cosmiconfig } from 'cosmiconfig'
 import chalk from 'chalk'
-import Structured, { LintErrors } from './Structured'
+import Structured from './Structured'
+import { LintErrors } from './LintError'
 
 async function run() {
   const explorer = cosmiconfig('structured')
@@ -23,7 +24,7 @@ async function run() {
 
     console.error(chalk.bold.red(`${err.message}:`))
     // TODO Group by path
-    for (const error of err.validationErrors) {
+    for (const error of err.lintErrors) {
       console.error(`  ${error.path}`)
       console.error(chalk.red(`    ${error.message}`))
     }

@@ -1,90 +1,11 @@
 import fs from 'fs'
 import path from 'path'
 import fg from 'fast-glob'
-import * as changeCase from 'change-case'
-import Handlebars from 'handlebars'
 import { parseForESLint } from '@typescript-eslint/parser'
 import minimatch from 'minimatch'
-
-for (const [name, fn] of Object.entries(changeCase)) {
-  Handlebars.registerHelper(name, text => (fn as Function)(text))
-}
-
-export class ConfigError extends Error {
-  constructor(message: string) {
-    super(message)
-
-    // Explicitly set prototype, otherwise instanceof won't work
-    Object.setPrototypeOf(this, ConfigError.prototype)
-  }
-}
-
-export class LintError extends Error {
-  constructor(readonly path: string, message: string) {
-    super(message)
-
-    // Explicitly set prototype, otherwise instanceof won't work
-    Object.setPrototypeOf(this, LintError.prototype)
-  }
-}
-
-export class LintErrors extends Error {
-  constructor(message: string, readonly validationErrors: LintError[]) {
-    super(message)
-
-    // Explicitly set prototype, otherwise instanceof won't work
-    Object.setPrototypeOf(this, LintErrors.prototype)
-  }
-}
-
-function match(matchTemplate: string | undefined, glob: string, fileOrFolderPath: string) {
-  if (typeof matchTemplate !== 'string' || !matchTemplate) {
-    return
-  }
-  const template = Handlebars.compile(matchTemplate)
-  const baseName = path.basename(fileOrFolderPath)
-  const name = baseName.replace(path.basename(glob).replace('*', ''), '')
-  // console.log('found file or folder', fileOrFolderPath, name)
-  if (template({ name }) !== baseName) {
-    throw new LintError(fileOrFolderPath, `No match: "${baseName}" does not match "${matchTemplate}"`)
-  }
-}
-
-function isAllowed(config: any, importPackageOrPath: string, filePath: string, cwd: string) {
-  function find(rules: any[]) {
-    return rules.find((rule: any) => {
-      if (typeof rule === 'string') {
-        return importPackageOrPath === rule || importPackageOrPath.startsWith(`${rule}/`)
-      }
-      if (rule.glob) {
-        // Import file
-        const absolutePath = path.relative(cwd, path.resolve(path.dirname(filePath), importPackageOrPath))
-
-        return minimatch(importPackageOrPath, rule.glob) || minimatch(absolutePath, rule.glob)
-      }
-      return false
-    })
-  }
-
-  if (Array.isArray(config.allow)) {
-    const found = find(config.allow)
-
-    if (found) {
-      return
-    }
-  }
-
-  if (Array.isArray(config.disallow)) {
-    const found = find(config.disallow)
-
-    if (found) {
-      throw new LintError(
-        filePath,
-        `Import "${importPackageOrPath}" not allowed${found.message ? ': ' + found.message : ''}`,
-      )
-    }
-  }
-}
+import ConfigError from './ConfigError'
+import LintError, { LintErrors } from './LintError'
+import createTemplate from './util/template'
 
 export type Options = {
   folders: { [glob: string]: any }
@@ -92,13 +13,29 @@ export type Options = {
 }
 
 export default class Structured {
+  private trackedFolders: string[] = []
+  private trackedFiles: string[] = []
+  private errors: LintError[] = []
+
   constructor(private cwd: string, private options: Options) {}
 
   async lint() {
-    const trackedFolders: string[] = []
-    const trackedFiles: string[] = []
-    const errors: LintError[] = []
+    this.prepare()
+    await this.checkFolders()
+    await this.checkFiles()
+    await this.checkUntrackedFiles()
+    this.checkErrors()
+  }
 
+  private prepare() {
+    this.trackedFolders = []
+    this.trackedFiles = []
+    this.errors = []
+
+    // TODO Validate config object
+  }
+
+  private async checkFolders() {
     for (const [glob, config] of Object.entries(this.options.folders)) {
       if (!glob.endsWith('/')) {
         throw new ConfigError(`Folder glob "${glob}" must end with slash for readability`)
@@ -107,20 +44,22 @@ export default class Structured {
       const folders = await fg(glob.replace(/\/$/, ''), { cwd: this.cwd, onlyDirectories: true, markDirectories: true })
 
       if (!folders.length) {
-        errors.push(new LintError(glob, 'No folders found'))
+        this.errors.push(new LintError(glob, 'No folders found'))
       }
 
       for (const foundFolder of folders) {
-        trackedFolders.push(foundFolder)
+        this.trackedFolders.push(foundFolder)
 
         try {
-          match(config.match, glob, foundFolder)
+          this.assertMatch(config.match, glob, foundFolder)
         } catch (err) {
-          errors.push(err)
+          this.errors.push(err)
         }
       }
     }
+  }
 
+  private async checkFiles() {
     for (const [glob, config] of Object.entries(this.options.files)) {
       if (glob.endsWith('/')) {
         throw new ConfigError(`File glob "${glob}" must not end with slash`)
@@ -129,16 +68,16 @@ export default class Structured {
       const files = await fg(glob.replace(/\/$/, ''), { cwd: this.cwd, onlyFiles: true, dot: true })
 
       if (!files.length) {
-        errors.push(new LintError(glob, 'No files found'))
+        this.errors.push(new LintError(glob, 'No files found'))
       }
 
       for (const foundFile of files) {
-        trackedFiles.push(foundFile)
+        this.trackedFiles.push(foundFile)
 
         try {
-          match(config.match, glob, foundFile)
+          this.assertMatch(config.match, glob, foundFile)
         } catch (err) {
-          errors.push(err)
+          this.errors.push(err)
         }
 
         if (config.imports || config.exports) {
@@ -147,18 +86,16 @@ export default class Structured {
             ecmaVersion: 6,
             sourceType: 'module',
           }).ast
-          // console.log(glob, foundFile, config, code, ast)
 
           const imports = ast.body
             .filter(item => item.type === 'ImportDeclaration')
             .map(item => (item as any).source.value)
-          // console.log(imports)
 
           for (const importPackageOrPath of imports) {
             try {
-              isAllowed(config.imports, importPackageOrPath, foundFile, this.cwd)
+              this.checkImportAllowed(config.imports, importPackageOrPath, foundFile, this.cwd)
             } catch (err) {
-              errors.push(err)
+              this.errors.push(err)
             }
           }
 
@@ -168,23 +105,22 @@ export default class Structured {
             const type = exportName === 'default' ? 'ExportDefaultDeclaration' : 'ExportNamedDeclaration'
             const item = ast.body.find(item => item.type === type) as any
 
-            // TODO Add strict mode: no untracked exports?
             if (!item) {
-              errors.push(new LintError(foundFile, `Missing "${exportName}" export`))
+              this.errors.push(new LintError(foundFile, `Missing "${exportName}" export`))
             }
 
             if (config.type === 'class' && item.declaration.type !== 'ClassDeclaration') {
-              errors.push(new LintError(foundFile, `Expected "${exportName}" export to be a class`))
+              this.errors.push(new LintError(foundFile, `Expected "${exportName}" export to be a class`))
             } else {
               if (typeof config2.match === 'string' && config2.match) {
-                const template = Handlebars.compile(config2.match)
+                const template = createTemplate(config2.match)
                 const baseName = path.basename(foundFile)
                 const name = baseName.replace(path.basename(glob).replace('*', ''), '')
                 const expected = template({ name })
                 const actual = item.declaration?.id?.name || item.declaration?.name
 
                 if (expected !== actual) {
-                  errors.push(new LintError(foundFile, `No match: "${actual}" does not match "${expected}"`))
+                  this.errors.push(new LintError(foundFile, `No match: "${actual}" does not match "${expected}"`))
                 }
               }
             }
@@ -197,21 +133,25 @@ export default class Structured {
           }
 
           for (const requiredFileTemplate of config.requires) {
-            const template = Handlebars.compile(requiredFileTemplate)
+            const template = createTemplate(requiredFileTemplate)
             const baseName = path.basename(foundFile)
             const name = baseName.replace(path.basename(glob).replace('*', ''), '')
             const requiredFile = path.resolve(path.dirname(foundFile), template({ name }))
 
             if (fs.existsSync(requiredFile) && fs.statSync(requiredFile).isFile()) {
-              trackedFiles.push(requiredFile)
+              this.trackedFiles.push(requiredFile)
             } else {
-              errors.push(new LintError(foundFile, `Requires other file: "${path.relative(this.cwd, requiredFile)}"`))
+              this.errors.push(
+                new LintError(foundFile, `Requires other file: "${path.relative(this.cwd, requiredFile)}"`),
+              )
             }
           }
         }
       }
     }
+  }
 
+  private async checkUntrackedFiles() {
     for (const [glob, config] of Object.entries(this.options.folders)) {
       if (!glob.endsWith('/')) {
         throw new ConfigError(`Folder glob "${glob}" must end with slash for readability`)
@@ -223,7 +163,7 @@ export default class Structured {
 
       const filesInFolder = await fg(glob + '**/*', { cwd: this.cwd, onlyFiles: true, dot: true })
 
-      for (const trackedFile of trackedFiles) {
+      for (const trackedFile of this.trackedFiles) {
         const index = filesInFolder.indexOf(trackedFile)
         if (index !== -1) {
           filesInFolder.splice(index, 1)
@@ -231,12 +171,62 @@ export default class Structured {
         }
       }
       for (const untrackedFile of filesInFolder) {
-        errors.push(new LintError(glob, `Untracked file is not allowed: "${untrackedFile}"`))
+        this.errors.push(new LintError(glob, `Untracked file is not allowed: "${untrackedFile}"`))
+      }
+    }
+  }
+
+  private checkErrors() {
+    if (this.errors.length > 1) {
+      throw new LintErrors(`Found ${this.errors.length} problem${this.errors.length === 1 ? '' : 's'}`, this.errors)
+    }
+  }
+
+  private assertMatch(matchTemplate: string | undefined, glob: string, fileOrFolderPath: string): void {
+    if (typeof matchTemplate !== 'string' || !matchTemplate) {
+      return
+    }
+    const template = createTemplate(matchTemplate)
+    const baseName = path.basename(fileOrFolderPath)
+    const name = baseName.replace(path.basename(glob).replace('*', ''), '')
+    if (template({ name }) !== baseName) {
+      throw new LintError(fileOrFolderPath, `No match: "${baseName}" does not match "${matchTemplate}"`)
+    }
+  }
+
+  private checkImportAllowed(config: any, importPackageOrPath: string, filePath: string, cwd: string): void {
+    function find(rules: any[]) {
+      return rules.find((rule: any) => {
+        if (typeof rule === 'string') {
+          return importPackageOrPath === rule || importPackageOrPath.startsWith(`${rule}/`)
+        }
+        if (rule.glob) {
+          const importPackage = importPackageOrPath
+          const importPath = path.relative(cwd, path.resolve(path.dirname(filePath), importPackageOrPath))
+
+          return minimatch(importPackage, rule.glob) || minimatch(importPath, rule.glob)
+        }
+        return false
+      })
+    }
+
+    if (Array.isArray(config.allow)) {
+      const found = find(config.allow)
+
+      if (found) {
+        return
       }
     }
 
-    if (errors.length > 1) {
-      throw new LintErrors(`Found ${errors.length} problem${errors.length === 1 ? '' : 's'}`, errors)
+    if (Array.isArray(config.disallow)) {
+      const found = find(config.disallow)
+
+      if (found) {
+        throw new LintError(
+          filePath,
+          `Import "${importPackageOrPath}" not allowed${found.message ? ': ' + found.message : ''}`,
+        )
+      }
     }
   }
 }

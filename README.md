@@ -18,13 +18,14 @@ See [example directory](examples/all-features/).
 ```bash
 yarn add --dev @hellotellow/structured
 
-# Create configuration or lint code base structure
+yarn structured --help
+yarn structured --init
 yarn structured
 
 # That's it!
 ```
 
-```bash
-# Show available commands and their flags
-yarn structured --help
-```
+## Features To Consider
+
+- Disallowing untracked imports
+- Disallowing untracked exports
