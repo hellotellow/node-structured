@@ -18,9 +18,9 @@ See [example directory](examples/all-features/).
 ```bash
 yarn add --dev @hellotellow/structured
 
-yarn structured --help
-yarn structured --init
-yarn structured
+# yarn structured help
+yarn structured init
+yarn structured lint
 
 # That's it!
 ```
