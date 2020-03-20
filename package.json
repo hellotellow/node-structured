@@ -14,7 +14,7 @@
   },
   "scripts": {
     "build": "tsc",
-    "prepublish": "yarn build"
+    "prepare": "yarn build"
   },
   "devDependencies": {
     "@types/hapi__joi": "^16.0.12",
