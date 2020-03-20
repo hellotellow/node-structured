@@ -8,6 +8,7 @@
     "url": "https://github.com/hellotellow/node-structured.git"
   },
   "license": "MIT",
+  "main": "dist/index.js",
   "bin": {
     "structured": "dist/bin/cli.js"
   },
