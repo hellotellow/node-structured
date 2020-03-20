@@ -13,7 +13,8 @@
     "structured": "dist/bin/cli.js"
   },
   "scripts": {
-    "build": "tsc"
+    "build": "tsc",
+    "prepublish": "yarn build"
   },
   "devDependencies": {
     "@types/hapi__joi": "^16.0.12",
