@@ -2,7 +2,7 @@
   "name": "@hellotellow/structured",
   "description": "Linting your folders, files, imports and exports.",
   "version": "0.1.0",
-  "author": "Tellow Team <dev@tellow.nl>",
+  "author": "Tellow Team <developers@tellow.nl>",
   "repository": {
     "type": "git",
     "url": "https://github.com/hellotellow/node-structured.git"
