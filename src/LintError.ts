@@ -10,7 +10,7 @@ export class LintErrors extends Error {
   }
 }
 
-export default class LintError extends Error {
+export class LintError extends Error {
   constructor(readonly path: string, message: string) {
     super(message)
 

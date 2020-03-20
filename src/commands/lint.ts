@@ -1,7 +1,7 @@
 import { Argv } from 'yargs'
 import chalk from 'chalk'
 import { cosmiconfig } from 'cosmiconfig'
-import Structured from '../Structured'
+import { Structured } from '../Structured'
 import { LintErrors } from '../LintError'
 
 export const command = 'lint'

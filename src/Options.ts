@@ -36,7 +36,7 @@ export type Options = {
   }
 }
 
-export default Joi.object({
+export const OptionsSchema = Joi.object({
   folders: Joi.object()
     .optional()
     .pattern(

@@ -3,12 +3,12 @@ import path from 'path'
 import fg from 'fast-glob'
 import { parseForESLint } from '@typescript-eslint/parser'
 import minimatch from 'minimatch'
-import OptionsSchema, { Options } from './Options'
-import ConfigError from './ConfigError'
-import LintError, { LintErrors } from './LintError'
+import { Options, OptionsSchema } from './Options'
+import { ConfigError } from './ConfigError'
+import { LintError, LintErrors } from './LintError'
 import createTemplate from './util/template'
 
-export default class Structured {
+export class Structured {
   private trackedFolders: string[] = []
   private trackedFiles: string[] = []
   private errors: LintError[] = []
