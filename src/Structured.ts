@@ -162,7 +162,7 @@ export class Structured {
   }
 
   private checkErrors() {
-    if (this.errors.length > 1) {
+    if (this.errors.length > 0) {
       throw new LintErrors(`Found ${this.errors.length} problem${this.errors.length === 1 ? '' : 's'}`, this.errors)
     }
   }
