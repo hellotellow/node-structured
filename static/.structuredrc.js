@@ -14,7 +14,7 @@ module.exports = {
       match: '{{camelCase name}}.service.ts',
       imports: {
         // Example: allow: ['lodash', { glob: 'lodash/get' }]
-        disallow: [
+        deny: [
           // Example: 'lodash'
           { glob: 'src/controllers/**/*', message: 'Domain logic should not depend on application logic' },
         ],

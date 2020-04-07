@@ -17,7 +17,7 @@ export type Options = {
               glob: string
             }
         >
-        disallow?: Array<
+        deny?: Array<
           | string
           | {
               glob: string
@@ -61,7 +61,7 @@ export const OptionsSchema = Joi.object({
               }),
             )
             .optional(),
-          disallow: Joi.array()
+          deny: Joi.array()
             .items(
               Joi.string(),
               Joi.object({

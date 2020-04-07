@@ -30,8 +30,8 @@ yarn structured lint
 
 ## Features To Consider
 
-- Disallowing untracked imports
-- Disallowing untracked exports
+- Denying untracked imports
+- Denying untracked exports
 
 ## Issues
 

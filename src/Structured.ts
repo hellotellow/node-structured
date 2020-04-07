@@ -212,8 +212,8 @@ export class Structured {
       }
     }
 
-    if (Array.isArray(config.disallow)) {
-      const found = find(config.disallow)
+    if (Array.isArray(config.deny)) {
+      const found = find(config.deny)
 
       if (found) {
         throw new LintError(
