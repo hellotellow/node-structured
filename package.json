@@ -1,7 +1,7 @@
 {
   "name": "@hellotellow/structured",
   "description": "Linting your folders, files, imports and exports.",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "author": "Tellow Team <developers@tellow.nl>",
   "repository": {
     "type": "git",
