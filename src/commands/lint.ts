@@ -21,6 +21,7 @@ export async function handler(argv: Argv) {
 
   try {
     await structured.lint()
+    console.info(chalk.green('Your code structure is as beautiful as it should be!'))
   } catch (err) {
     if (!(err instanceof LintErrors)) {
       throw err
