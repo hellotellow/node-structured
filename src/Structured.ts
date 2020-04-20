@@ -81,15 +81,17 @@ export class Structured {
             sourceType: 'module',
           }).ast
 
-          const imports = ast.body
-            .filter(item => item.type === 'ImportDeclaration')
-            .map(item => (item as any).source.value)
+          if (config.imports) {
+            const imports = ast.body
+              .filter(item => item.type === 'ImportDeclaration')
+              .map(item => (item as any).source.value)
 
-          for (const importPackageOrPath of imports) {
-            try {
-              this.checkImportAllowed(config.imports, importPackageOrPath, foundFile, this.cwd)
-            } catch (err) {
-              this.errors.push(err)
+            for (const importPackageOrPath of imports) {
+              try {
+                this.checkImportAllowed(config.imports, importPackageOrPath, foundFile, this.cwd)
+              } catch (err) {
+                this.errors.push(err)
+              }
             }
           }
 
