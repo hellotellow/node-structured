@@ -27,11 +27,12 @@ export async function handler(argv: Argv) {
     }
 
     console.error(chalk.bold.red(`${err.message}:`))
-    // TODO Group by path
+
     for (const error of err.lintErrors) {
       console.error(`  ${error.path}`)
       console.error(chalk.red(`    ${error.message}`))
     }
+
     process.exit(1)
   }
 }

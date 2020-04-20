@@ -27,7 +27,7 @@ export type Options = {
       }
       exports: {
         [name: string]: {
-          type?: string
+          type?: string | string[]
           match?: string
         }
       }
@@ -76,7 +76,7 @@ export const OptionsSchema = Joi.object({
           .pattern(
             Joi.string(),
             Joi.object({
-              type: Joi.string().optional(),
+              type: Joi.alternatives().try(Joi.string(), Joi.array().items(Joi.string())),
               match: Joi.string().optional(),
             }),
           ),

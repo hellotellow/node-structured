@@ -101,12 +101,26 @@ export class Structured {
               this.errors.push(new LintError(foundFile, `Missing "${exportName}" export`))
             }
 
-            if (config2.type === 'class' && item.declaration.type !== 'ClassDeclaration') {
-              this.errors.push(new LintError(foundFile, `Expected "${exportName}" export to be a class`))
-            } else {
-              const actual = item.declaration?.id?.name || item.declaration?.name
-              this.checkMatch(config2.match, glob, foundFile, actual)
+            const types = (Array.isArray(config2.type) ? config2.type : [config2.type]).filter(Boolean)
+
+            const isClass = types.includes('class') && item.declaration.type === 'ClassDeclaration'
+            const isFunction = types.includes('function') && item.declaration.type === 'FunctionDeclaration'
+
+            if (types.length > 0 && !isClass && !isFunction) {
+              this.errors.push(
+                new LintError(
+                  foundFile,
+                  `Expected "${exportName}" export to be ${
+                    // Example: "one of: class, function" or "a class"s
+                    types.length > 1 ? 'one of: ' + types.join(', ') : 'a ' + types[0]
+                  }`,
+                ),
+              )
+              continue
             }
+
+            const actual = item.declaration?.id?.name || item.declaration?.name
+            this.checkMatch(config2.match, glob, foundFile, actual)
           }
         }
 
