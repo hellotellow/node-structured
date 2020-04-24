@@ -4,16 +4,18 @@
 ---
 
 <h3>
-  Warning: This package is in development.<br />
+  Warning: This package is under development.<br />
   Please use freely, but be aware newer releases will likely contain breaking changes.
 </h3>
+
+---
 
 ## Features
 
 - ✅ Lint folder names: enforce code base structure
 - ✅ Lint file names: specify naming conventions
-- ✅ Lint imports: whitelist/blacklist import paths
-- ✅ Lint exports: define expected exports
+- ✅ Lint imports: whitelist/blacklist import paths and packages
+- ✅ Lint exports: define expected export types and names
 
 ## Examples
 
@@ -31,11 +33,6 @@ yarn structured lint
 
 # That's it!
 ```
-
-## Features To Consider
-
-- Denying untracked imports
-- Denying untracked exports
 
 ## Issues
 
