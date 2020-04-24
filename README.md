@@ -1,8 +1,12 @@
-# Structured
+<p align="center"><img src="static/logo.png" alt="Structured Logo" /></p>
+<h3 align="center">Linting your folders, files, imports and exports.</h3>
 
-> Linting your folders, files, imports and exports.
+---
 
-### [Warning: This package is in development. Please use freely, but be aware newer releases will likely contain breaking changes.]
+<h3>
+  Warning: This package is in development.<br />
+  Please use freely, but be aware newer releases will likely contain breaking changes.
+</h3>
 
 ## Features
 
